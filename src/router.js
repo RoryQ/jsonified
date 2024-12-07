@@ -5,6 +5,7 @@
 // itty-router: https://www.npmjs.com/package/itty-router
 // Hono: https://www.npmjs.com/package/hono
 
+import parsePoolData from './msac';
 
 class Router {
 	routes = [];
@@ -96,6 +97,32 @@ router.post("/api/todos", async ({ request }) => {
 	return new Response("Creating Todo: " + JSON.stringify(content));
 });
 
+
+router.get("/api/msac", async ({ request }) => {
+	try {
+		const response = await fetch('https://statesportcentres.com.au/aquatics/lap-lane-availability/');
+		const html = await response.text();
+
+		// Parse the data
+		const data = await parsePoolData(html);
+
+		// Return JSON response
+		return new Response(JSON.stringify(data, null, 2), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*'
+			}
+		});
+	} catch (error) {
+		return new Response(JSON.stringify({ error: error.message }), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*'
+			}
+		});
+	}
+})
 
 // 404 for everything else
 router.all("*", () => new Response("Not Found.", { status: 404 }));

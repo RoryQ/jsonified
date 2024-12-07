@@ -1,0 +1,8 @@
+name = "jsonifed"
+main = "src/worker.js"
+compatibility_date = "2024-12-07"
+workers_dev = true
+preview_urls = false
+
+[observability]
+enabled = true

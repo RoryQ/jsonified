@@ -6,6 +6,7 @@
 // Hono: https://www.npmjs.com/package/hono
 
 import parsePoolData from './msac';
+import {parseBeachReport, parseYarraWatch} from './epa-vic'
 
 class Router {
 	routes = [];
@@ -111,6 +112,34 @@ router.get("/api/msac", async ({ request }) => {
 			headers: {
 				'Content-Type': 'application/json',
 				'Access-Control-Allow-Origin': '*'
+			}
+		});
+	} catch (error) {
+		return new Response(JSON.stringify({ error: error.message }), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*'
+			}
+		});
+	}
+})
+
+router.get("/api/epa-vic", async ({ request }) => {
+	try {
+		const response = await fetch('https://www.epa.vic.gov.au/for-community/summer-water-quality/water-quality-across-victoria');
+		const html = await response.text();
+
+		const data = {
+			beachReport: parseBeachReport(html),
+			yarraWatch: parseYarraWatch(html)
+		};
+
+		return new Response(JSON.stringify(data, null, 2), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+				'Cache-Control': 'max-age=300'
 			}
 		});
 	} catch (error) {

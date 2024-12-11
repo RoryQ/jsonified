@@ -142,46 +142,39 @@ router.get("/api/epa-vic/:name", async ({ params }) => {
 		let found = (data.beachReport.sites)[Object.keys(data.beachReport.sites).find(key => (data.beachReport.sites)[key].slugName === slugName(params.name))];
 
 		if (!found) {
-			return new Response("Not Found.", { status: 404 });
+			return NotFoundResponse()
 		}
 
-		return new Response(JSON.stringify(found, null, 2), {})
-
+		return JsonResponse(found)
 	} catch (error) {
-		return new Response(JSON.stringify({ error: error.message }), {
-			status: 500,
-			headers: {
-				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*'
-			}
-		});
+		return JsonResponse({error: error.message }, 500)
 	}
 })
 
 router.get("/api/epa-vic", async ({ request }) => {
 	try {
 		const data = await getEpaReport()
-
-		return new Response(JSON.stringify(data, null, 2), {
-			headers: {
-				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
-				'Cache-Control': 'max-age=300'
-			}
-		});
+		return JsonResponse(data)
 	} catch (error) {
-		return new Response(JSON.stringify({ error: error.message }), {
-			status: 500,
-			headers: {
-				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*'
-			}
-		});
+		return JsonResponse({error: error.message }, 500)
 	}
 })
 
 // 404 for everything else
 router.all("*", () => new Response("Not Found.", { status: 404 }));
 
+function JsonResponse(data, status=200) {
+	return new Response(JSON.stringify(data, null, 2), {
+		status: status,
+		headers: {
+			'Content-Type': 'application/json',
+			'Access-Control-Allow-Origin': '*'
+		}
+	})
+}
+
+function NotFoundResponse() {
+	return new Response("Not Found.", { status: 404 });
+}
 
 export default router;

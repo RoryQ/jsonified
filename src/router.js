@@ -6,7 +6,7 @@
 // Hono: https://www.npmjs.com/package/hono
 
 import parsePoolData from './msac';
-import {parseBeachReport, parseYarraWatch} from './epa-vic'
+import { parseBeachReport, parseYarraWatch, slugName } from './epa-vic';
 
 class Router {
 	routes = [];
@@ -125,15 +125,42 @@ router.get("/api/msac", async ({ request }) => {
 	}
 })
 
+async function getEpaReport() {
+	const response = await fetch('https://www.epa.vic.gov.au/for-community/summer-water-quality/water-quality-across-victoria');
+	const html = await response.text();
+
+	return {
+		beachReport: parseBeachReport(html),
+		yarraWatch: parseYarraWatch(html)
+	};
+}
+
+router.get("/api/epa-vic/:name", async ({ params }) => {
+	try {
+		const data = await getEpaReport()
+
+		let found = (data.beachReport.sites)[Object.keys(data.beachReport.sites).find(key => (data.beachReport.sites)[key].slugName === slugName(params.name))];
+
+		if (!found) {
+			return new Response("Not Found.", { status: 404 });
+		}
+
+		return new Response(JSON.stringify(found, null, 2), {})
+
+	} catch (error) {
+		return new Response(JSON.stringify({ error: error.message }), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*'
+			}
+		});
+	}
+})
+
 router.get("/api/epa-vic", async ({ request }) => {
 	try {
-		const response = await fetch('https://www.epa.vic.gov.au/for-community/summer-water-quality/water-quality-across-victoria');
-		const html = await response.text();
-
-		const data = {
-			beachReport: parseBeachReport(html),
-			yarraWatch: parseYarraWatch(html)
-		};
+		const data = await getEpaReport()
 
 		return new Response(JSON.stringify(data, null, 2), {
 			headers: {

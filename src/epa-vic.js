@@ -27,6 +27,7 @@ export function parseBeachReport(html) {
 		const siteName = site.trim();
 
 		sites[siteName] = {
+			slugName: slugName(siteName),
 			name: siteName,
 			today: todayData,
 			tomorrow: tomorrowData,
@@ -67,6 +68,7 @@ export function parseYarraWatch(html) {
 		const siteName = site.trim();
 
 		sites[siteName] = {
+			slugName: slugName(siteName),
 			name: siteName,
 			today: todayData,
 			tomorrow: tomorrowData,
@@ -119,4 +121,20 @@ function parseLinks(html) {
 function extractUpdateTime(html) {
 	const timeMatch = html.match(/Updated\s+(\d{1,2}(?::\d{2})?[ap]m\s+\d{1,2}\s+\w+\s+\d{4}\s+[A-Z]+)/i);
 	return timeMatch ? timeMatch[1] : null;
+}
+
+export function slugName(str) {
+	if (!str) return '';
+
+	return str
+		// Convert to lowercase
+		.toLowerCase()
+		// Replace all spaces and underscores with hyphens
+		.replace(/[\s_]+/g, '-')
+		// Remove special characters except hyphens
+		.replace(/[^a-z0-9-]/g, '')
+		// Replace multiple consecutive hyphens with a single hyphen
+		.replace(/-+/g, '-')
+		// Remove leading and trailing hyphens
+		.replace(/^-+|-+$/g, '');
 }

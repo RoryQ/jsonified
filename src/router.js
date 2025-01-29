@@ -100,7 +100,7 @@ router.post("/api/todos", async ({ request }) => {
 });
 
 
-router.get("/api/msac/tomorrow", async ({ request }) => {
+const msacLanesTomorrowHandler = async ({ params }) => {
 	const data = await getMsacLanes();
 
 	// filter for tomorrow
@@ -109,9 +109,14 @@ router.get("/api/msac/tomorrow", async ({ request }) => {
 		indoor: Object.values(data.indoor.days)[1],
 	}
 
-	const morning = ["06:00", "06:30", "07:00", "07:30", "08:00", "08:30", "09:00"];
-	tomorrow.outdoor.timeSlots = R.pick(morning, tomorrow.outdoor.timeSlots)
-	tomorrow.indoor.timeSlots = R.pick(morning, tomorrow.indoor.timeSlots)
+	let timeslotFilters = {
+		morning: ["06:00", "06:30", "07:00", "07:30", "08:00", "08:30", "09:00"],
+	}
+
+	if (!!params.filter) {
+		tomorrow.outdoor.timeSlots = R.pick(timeslotFilters[params.filter], tomorrow.outdoor.timeSlots)
+		tomorrow.indoor.timeSlots = R.pick(timeslotFilters[params.filter], tomorrow.indoor.timeSlots)
+	}
 
 	return new Response(JSON.stringify(tomorrow, null, 2), {
 		headers: {
@@ -119,7 +124,10 @@ router.get("/api/msac/tomorrow", async ({ request }) => {
 			'Access-Control-Allow-Origin': '*'
 		}
 	});
-})
+};
+
+router.get("/api/msac/tomorrow", msacLanesTomorrowHandler);
+router.get("/api/msac/tomorrow/:filter", msacLanesTomorrowHandler);
 
 async function getMsacLanes() {
 	const response = await fetch('https://statesportcentres.com.au/aquatics/lap-lane-availability/');

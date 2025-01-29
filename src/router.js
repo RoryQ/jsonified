@@ -7,6 +7,7 @@
 
 import parsePoolData from './msac';
 import { parseBeachReport, parseYarraWatch, slugName } from './epa-vic';
+import * as R from 'ramda';
 
 class Router {
 	routes = [];
@@ -99,13 +100,38 @@ router.post("/api/todos", async ({ request }) => {
 });
 
 
+router.get("/api/msac/tomorrow", async ({ request }) => {
+	const data = await getMsacLanes();
+
+	// filter for tomorrow
+	let tomorrow = {
+		outdoor: Object.values(data.outdoor.days)[1],
+		indoor: Object.values(data.indoor.days)[1],
+	}
+
+	const morning = ["06:00", "06:30", "07:00", "07:30", "08:00", "08:30", "09:00"];
+	tomorrow.outdoor.timeSlots = R.pick(morning, tomorrow.outdoor.timeSlots)
+	tomorrow.indoor.timeSlots = R.pick(morning, tomorrow.indoor.timeSlots)
+
+	return new Response(JSON.stringify(tomorrow, null, 2), {
+		headers: {
+			'Content-Type': 'application/json',
+			'Access-Control-Allow-Origin': '*'
+		}
+	});
+})
+
+async function getMsacLanes() {
+	const response = await fetch('https://statesportcentres.com.au/aquatics/lap-lane-availability/');
+	const html = await response.text();
+
+	// Parse the data
+	return await parsePoolData(html);
+}
+
 router.get("/api/msac", async ({ request }) => {
 	try {
-		const response = await fetch('https://statesportcentres.com.au/aquatics/lap-lane-availability/');
-		const html = await response.text();
-
-		// Parse the data
-		const data = await parsePoolData(html);
+		const data = await getMsacLanes();
 
 		// Return JSON response
 		return new Response(JSON.stringify(data, null, 2), {

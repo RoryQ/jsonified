@@ -9,6 +9,7 @@ import parsePoolData from './msac';
 import { parseBeachReport, parseYarraWatch, slugName } from './epa-vic';
 import * as R from 'ramda';
 import { parseVictorianPublicHolidays } from './public-holidays-vic';
+import { parseNSWPublicHolidays } from './public-holidays-nsw';
 
 class Router {
 	routes = [];
@@ -180,6 +181,19 @@ router.get("/api/public-holidays/victoria/:year", async ({ params }) => {
 	const html = await response.text();
 	return JsonResponse(parseVictorianPublicHolidays(html));
 })
+
+const nswPublicHolidaysHandler = async ({ params }) => {
+	const response = await fetch(`https://www.nsw.gov.au/about-nsw/public-holidays`);
+	const html = await response.text();
+	const holidays = parseNSWPublicHolidays(html);
+	if (!!params.year) {
+		return JsonResponse(R.pickBy((_, k) => k.startsWith(params.year), holidays));
+	}
+	return JsonResponse(holidays)
+};
+router.get("/api/public-holidays/new-south-wales", nswPublicHolidaysHandler)
+router.get("/api/public-holidays/new-south-wales/:year", nswPublicHolidaysHandler)
+
 
 // 404 for everything else
 router.all("*", () => new Response("Not Found.", { status: 404 }));

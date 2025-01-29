@@ -30,6 +30,7 @@ export default {
       <ul>
       <li><code><a href="/api/msac/tomorrow/morning">/api/msac/tomorrow/morning</a></code></li>
 			<li><code><a href="/api/epa-vic/elwood">/api/epa-vic/elwood</a></code></li>
+			<li><code><a href="/api/public-holidays/victoria/2025">/api/public-holidays/victoria/2025</a></code></li>
 			`,
 			{ headers: { "Content-Type": "text/html" } }
 		);

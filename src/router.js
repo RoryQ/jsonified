@@ -8,6 +8,7 @@
 import parsePoolData from './msac';
 import { parseBeachReport, parseYarraWatch, slugName } from './epa-vic';
 import * as R from 'ramda';
+import { parseVictorianPublicHolidays } from './public-holidays-vic';
 
 class Router {
 	routes = [];
@@ -172,6 +173,12 @@ router.get("/api/epa-vic", async ({ request }) => {
 	} catch (error) {
 		return JsonResponse({error: error.message }, 500)
 	}
+})
+
+router.get("/api/public-holidays/victoria/:year", async ({ params }) => {
+	const response = await fetch(`https://business.vic.gov.au/business-information/public-holidays/victorian-public-holidays-${params.year}`);
+	const html = await response.text();
+	return JsonResponse(parseVictorianPublicHolidays(html));
 })
 
 // 404 for everything else

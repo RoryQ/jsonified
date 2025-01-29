@@ -9,8 +9,6 @@
  */
 
 
-import handleProxy from './proxy.js';
-import handleRedirect from './redirect.js';
 import apiRouter from './router.js';
 
 
@@ -26,8 +24,6 @@ export default {
       // You can also use more robust routing
       return apiRouter.handle(request);
     }
-
-
 
 		return new Response(
 			`Try making requests to:

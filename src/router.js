@@ -80,26 +80,6 @@ class Router {
 const router = new Router();
 
 
-// GET collection index
-router.get("/api/todos", () => new Response("Todos Index!"));
-
-
-// GET item
-router.get(
-	"/api/todos/:id",
-	({ params }) => new Response(`Todo #${params.id}`)
-);
-
-
-// POST to the collection (we'll use async here)
-router.post("/api/todos", async ({ request }) => {
-	const content = await request.json();
-
-
-	return new Response("Creating Todo: " + JSON.stringify(content));
-});
-
-
 const msacLanesTomorrowHandler = async ({ params }) => {
 	const data = await getMsacLanes();
 

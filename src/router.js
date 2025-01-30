@@ -10,6 +10,7 @@ import { parseBeachReport, parseYarraWatch, slugName } from './epa-vic';
 import * as R from 'ramda';
 import { parseVictorianPublicHolidays } from './public-holidays-vic';
 import { parseNSWPublicHolidays } from './public-holidays-nsw';
+import LaneParser from './stonnington';
 
 class Router {
 	routes = [];
@@ -28,13 +29,12 @@ class Router {
 	}
 
 	register(handler, path, method) {
-		path = trimTrailingSlashes(path);
 		const urlPattern = new URLPattern({ pathname: path });
 		this.routes.push([
 			(request) => {
 				if (method === undefined || request.method.toLowerCase() === method) {
 					const match = urlPattern.exec({
-						pathname: new URL(request.url).pathname
+						pathname: trimTrailingSlashes(new URL(request.url).pathname)
 					});
 					if (match) {
 						return { params: match.pathname.groups };
@@ -91,6 +91,7 @@ const router = new Router();
 router.get('/api/msac', msacHandler);
 router.get('/api/msac/tomorrow', msacLanesTomorrowHandler);
 router.get('/api/msac/tomorrow/:filter', msacLanesTomorrowHandler);
+router.get('/api/stonnington', stonningtonHandler);
 router.get('/api/epa-vic/:name', epaVicNameHandler);
 router.get('/api/epa-vic', epaVicHandler);
 router.get('/api/public-holidays/victoria/:year', publicHolidaysVictoriaHandler);
@@ -133,22 +134,18 @@ async function msacHandler({ request }) {
 	try {
 		const data = await getMsacLanes();
 
-		// Return JSON response
-		return new Response(JSON.stringify(data, null, 2), {
-			headers: {
-				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*'
-			}
-		});
+		return JsonResponse(data);
 	} catch (error) {
-		return new Response(JSON.stringify({ error: error.message }), {
-			status: 500,
-			headers: {
-				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*'
-			}
-		});
+		return JsonResponse({ error: error.message }, 500);
 	}
+}
+
+async function stonningtonHandler({ request }) {
+		const response = await fetch('https://www.stonnington.vic.gov.au/active/Swim/Lane-availability');
+		const html = await response.text();
+		const data = LaneParser.parseHTML(html);
+
+		return JsonResponse(data);
 }
 
 async function getEpaReport() {

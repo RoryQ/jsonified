@@ -14,7 +14,6 @@ import { parseNSWPublicHolidays } from './public-holidays-nsw';
 class Router {
 	routes = [];
 
-
 	handle(request) {
 		for (const route of this.routes) {
 			const match = route[0](request);
@@ -28,88 +27,99 @@ class Router {
 		}
 	}
 
-
 	register(handler, path, method) {
+		path = trimTrailingSlashes(path);
 		const urlPattern = new URLPattern({ pathname: path });
 		this.routes.push([
 			(request) => {
 				if (method === undefined || request.method.toLowerCase() === method) {
 					const match = urlPattern.exec({
-						pathname: new URL(request.url).pathname,
+						pathname: new URL(request.url).pathname
 					});
 					if (match) {
 						return { params: match.pathname.groups };
 					}
 				}
 			},
-			(args) => handler(args),
+			(args) => handler(args)
 		]);
 	}
 
-
 	options(path, handler) {
-		this.register(handler, path, "options");
-	}
-	head(path, handler) {
-		this.register(handler, path, "head");
-	}
-	get(path, handler) {
-		this.register(handler, path, "get");
-	}
-	post(path, handler) {
-		this.register(handler, path, "post");
-	}
-	put(path, handler) {
-		this.register(handler, path, "put");
-	}
-	patch(path, handler) {
-		this.register(handler, path, "patch");
-	}
-	delete(path, handler) {
-		this.register(handler, path, "delete");
+		this.register(handler, path, 'options');
 	}
 
+	head(path, handler) {
+		this.register(handler, path, 'head');
+	}
+
+	get(path, handler) {
+		this.register(handler, path, 'get');
+	}
+
+	post(path, handler) {
+		this.register(handler, path, 'post');
+	}
+
+	put(path, handler) {
+		this.register(handler, path, 'put');
+	}
+
+	patch(path, handler) {
+		this.register(handler, path, 'patch');
+	}
+
+	delete(path, handler) {
+		this.register(handler, path, 'delete');
+	}
 
 	all(path, handler) {
 		this.register(handler, path);
 	}
 }
 
+function trimTrailingSlashes(str) {
+	if (typeof str !== 'string') {
+		return '';
+	}
+	return str.replace(/\/+$/, '');
+}
 
 // Setting up our application:
-
-
 const router = new Router();
 
+router.get('/api/msac', msacHandler);
+router.get('/api/msac/tomorrow', msacLanesTomorrowHandler);
+router.get('/api/msac/tomorrow/:filter', msacLanesTomorrowHandler);
+router.get('/api/epa-vic/:name', epaVicNameHandler);
+router.get('/api/epa-vic', epaVicHandler);
+router.get('/api/public-holidays/victoria/:year', publicHolidaysVictoriaHandler);
+router.get('/api/public-holidays/new-south-wales', nswPublicHolidaysHandler);
+router.get('/api/public-holidays/new-south-wales/:year', nswPublicHolidaysHandler);
 
-const msacLanesTomorrowHandler = async ({ params }) => {
+// 404 for everything else
+router.all('*', () => new Response('Not Found.', { status: 404 }));
+
+async function msacLanesTomorrowHandler({ params }) {
 	const data = await getMsacLanes();
 
 	// filter for tomorrow
 	let tomorrow = {
 		outdoor: Object.values(data.outdoor.days)[1],
-		indoor: Object.values(data.indoor.days)[1],
-	}
+		indoor: Object.values(data.indoor.days)[1]
+	};
 
 	let timeslotFilters = {
-		morning: ["06:00", "06:30", "07:00", "07:30", "08:00", "08:30", "09:00"],
-	}
+		morning: ['06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00']
+	};
 
 	if (!!params.filter) {
-		tomorrow.outdoor.timeSlots = R.pick(timeslotFilters[params.filter], tomorrow.outdoor.timeSlots)
-		tomorrow.indoor.timeSlots = R.pick(timeslotFilters[params.filter], tomorrow.indoor.timeSlots)
+		tomorrow.outdoor.timeSlots = R.pick(timeslotFilters[params.filter], tomorrow.outdoor.timeSlots);
+		tomorrow.indoor.timeSlots = R.pick(timeslotFilters[params.filter], tomorrow.indoor.timeSlots);
 	}
 
-	return new Response(JSON.stringify(tomorrow, null, 2), {
-		headers: {
-			'Content-Type': 'application/json',
-			'Access-Control-Allow-Origin': '*'
-		}
-	});
-};
-
-router.get("/api/msac/tomorrow", msacLanesTomorrowHandler);
-router.get("/api/msac/tomorrow/:filter", msacLanesTomorrowHandler);
+	return JsonResponse(tomorrow);
+}
 
 async function getMsacLanes() {
 	const response = await fetch('https://statesportcentres.com.au/aquatics/lap-lane-availability/');
@@ -119,7 +129,7 @@ async function getMsacLanes() {
 	return await parsePoolData(html);
 }
 
-router.get("/api/msac", async ({ request }) => {
+async function msacHandler({ request }) {
 	try {
 		const data = await getMsacLanes();
 
@@ -139,7 +149,7 @@ router.get("/api/msac", async ({ request }) => {
 			}
 		});
 	}
-})
+}
 
 async function getEpaReport() {
 	const response = await fetch('https://www.epa.vic.gov.au/for-community/summer-water-quality/water-quality-across-victoria');
@@ -151,65 +161,59 @@ async function getEpaReport() {
 	};
 }
 
-router.get("/api/epa-vic/:name", async ({ params }) => {
+async function epaVicNameHandler({ params }) {
 	try {
-		const data = await getEpaReport()
+		const data = await getEpaReport();
 
 		let found = (data.beachReport.sites)[Object.keys(data.beachReport.sites).find(key => (data.beachReport.sites)[key].slugName === slugName(params.name))];
 
 		if (!found) {
-			return NotFoundResponse()
+			return NotFoundResponse();
 		}
 
-		return JsonResponse(found)
+		return JsonResponse(found);
 	} catch (error) {
-		return JsonResponse({error: error.message }, 500)
+		return JsonResponse({ error: error.message }, 500);
 	}
-})
+}
 
-router.get("/api/epa-vic", async ({ request }) => {
+async function epaVicHandler({ request }) {
 	try {
-		const data = await getEpaReport()
-		return JsonResponse(data)
+		const data = await getEpaReport();
+		return JsonResponse(data);
 	} catch (error) {
-		return JsonResponse({error: error.message }, 500)
+		return JsonResponse({ error: error.message }, 500);
 	}
-})
+}
 
-router.get("/api/public-holidays/victoria/:year", async ({ params }) => {
+async function publicHolidaysVictoriaHandler({ params }) {
 	const response = await fetch(`https://business.vic.gov.au/business-information/public-holidays/victorian-public-holidays-${params.year}`);
 	const html = await response.text();
 	return JsonResponse(parseVictorianPublicHolidays(html));
-})
+}
 
-const nswPublicHolidaysHandler = async ({ params }) => {
+async function nswPublicHolidaysHandler({ params }) {
 	const response = await fetch(`https://www.nsw.gov.au/about-nsw/public-holidays`);
 	const html = await response.text();
 	const holidays = parseNSWPublicHolidays(html);
 	if (!!params.year) {
 		return JsonResponse(R.pickBy((_, k) => k.startsWith(params.year), holidays));
 	}
-	return JsonResponse(holidays)
-};
-router.get("/api/public-holidays/new-south-wales", nswPublicHolidaysHandler)
-router.get("/api/public-holidays/new-south-wales/:year", nswPublicHolidaysHandler)
+	return JsonResponse(holidays);
+}
 
-
-// 404 for everything else
-router.all("*", () => new Response("Not Found.", { status: 404 }));
-
-function JsonResponse(data, status=200) {
+function JsonResponse(data, status = 200) {
 	return new Response(JSON.stringify(data, null, 2), {
 		status: status,
 		headers: {
 			'Content-Type': 'application/json',
 			'Access-Control-Allow-Origin': '*'
 		}
-	})
+	});
 }
 
 function NotFoundResponse() {
-	return new Response("Not Found.", { status: 404 });
+	return new Response('Not Found.', { status: 404 });
 }
 
 export default router;

@@ -1,10 +1,6 @@
 const GlenEiraParser = {
-	convertCarnegieToStonnington(carnegieData) {
-		const result = {
-			timestamp: new Date().toISOString(),
-			carnegie: { days: {} }
-		};
-
+	normaliseDataModel(carnegieData) {
+		const result = {}
 
 		carnegieData.paging.days.forEach(day => {
 			const dayBlock = carnegieData.dayBlocks.find(block => block.date === day.date);
@@ -48,7 +44,7 @@ const GlenEiraParser = {
 			// Sort lexicographically and convert to object
 			timeSlots = Object.fromEntries(sortedTimeSlots.sort(([a], [b]) => a.localeCompare(b)));
 
-			result.carnegie.days[dayKey] = {
+			result[dayKey] = {
 				name: new Date(day.date).toLocaleDateString('en-GB', {
 					weekday: 'long',
 					day: 'numeric',

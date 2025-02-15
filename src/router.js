@@ -151,11 +151,15 @@ async function stonningtonHandler({ request }) {
 }
 
 async function glenEiraHandler({ request }) {
-	const response = await fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=0bb104dd7&daysPerPage=7')
-	const json = await response.json();
-	const data = GlenEiraParser.convertCarnegieToStonnington(json);
+	const carnegieJson = await (await fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=0bb104dd7&daysPerPage=7')).json()
+	const gesacJson = await (await fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=2c38d8a41&daysPerPage=7')).json()
+	const result = {
+		timestamp: new Date().toISOString(),
+		carnegie: GlenEiraParser.normaliseDataModel(carnegieJson),
+		gesac: GlenEiraParser.normaliseDataModel(gesacJson),
+	};
 
-	return JsonResponse(data);
+	return JsonResponse(result);
 }
 
 async function getEpaReport() {

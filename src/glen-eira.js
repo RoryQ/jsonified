@@ -20,7 +20,8 @@ const GlenEiraParser = {
 					day: 'numeric',
 					month: 'long'
 				}),
-				timeSlots
+				timeSlots,
+				total: dayBlock.hours[0].numberOfFacilities,
 			};
 		});
 

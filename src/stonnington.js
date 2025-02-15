@@ -74,7 +74,8 @@ const StonningtonParser = {
 					if (!timeSlots[day]) {
 						timeSlots[day] = {
 							name: weekDays[i].toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
-							timeSlots: {}
+							timeSlots: {},
+							total: 8,
 						};
 					}
 					timeSlots[day].timeSlots[slotData.time] = lanes;
@@ -139,6 +140,7 @@ const StonningtonParser = {
 			if (rows.length > 1) { // Skip header row
 				result.haroldHolt = this.parseTimeSlots(rows.slice(1));
 			}
+			result.haroldHolt.total = 8;
 		}
 
 		// Find and parse prahran outdoor pool table

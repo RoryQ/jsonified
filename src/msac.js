@@ -42,7 +42,8 @@ function parsePoolTable(html, poolType) {
 
 		days[dayName] = {
 			name: parseDateStr(dateStr).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
-			timeSlots: {}
+			timeSlots: {},
+			total: 10,
 		};
 	});
 

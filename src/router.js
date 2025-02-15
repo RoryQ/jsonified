@@ -109,8 +109,8 @@ async function msacLanesTomorrowHandler({ params }) {
 
 	// filter for tomorrow
 	let tomorrow = {
-		outdoor: Object.values(data.outdoor.days)[1],
-		indoor: Object.values(data.indoor.days)[1]
+		outdoor: Object.values(data.msacOutdoor)[1],
+		indoor: Object.values(data.msacIndoor)[1]
 	};
 
 	let timeslotFilters = {

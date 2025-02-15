@@ -18,14 +18,14 @@ const StonningtonParser = {
 	normalizeTime(timeText) {
 		// Extract just the first time from any range
 		const firstTime = timeText.split('-')[0].trim();
-		
+
 		const timeMatch = firstTime.match(/(\d{1,2}):?(\d{2})?(?:am|pm)?/i);
 		if (!timeMatch) return null;
-		
+
 		let hours = parseInt(timeMatch[1]);
 		const minutes = timeMatch[2] ? timeMatch[2] : "00";
 		const isPM = firstTime.toLowerCase().endsWith('pm');
-		
+
 		// Special handling for 12am/12pm
 		if (hours === 12) {
 			hours = isPM ? 12 : 0;
@@ -34,7 +34,7 @@ const StonningtonParser = {
 		else if (isPM) {
 			hours += 12;
 		}
-		
+
 		return `${hours.toString().padStart(2, '0')}:${minutes}`;
 	},
 
@@ -69,8 +69,7 @@ const StonningtonParser = {
 				const weekDays = this.getWeekDates(new Date())
 				// For each day, add this time slot
 				Object.entries(slotData.slots).forEach(([shortDay, lanes], i) => {
-					const shortToLong = {'mon':'monday', 'tue': 'tuesday', 'wed':'wednesday', 'thu': 'thursday', 'fri': 'friday', 'sat': 'saturday', 'sun': 'sunday'}
-					const day = shortToLong[shortDay]
+					const day = weekDays[i].toISOString().substring(0, 10);
 					if (!timeSlots[day]) {
 						timeSlots[day] = {
 							name: weekDays[i].toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
@@ -91,9 +90,9 @@ const StonningtonParser = {
 		monday.setDate(date.getDate() - (date.getDay() || 7) + 1);
 
 		return Array.from({ length: 7 }, (_, i) => {
-			const day = new Date(monday);
-			day.setDate(monday.getDate() + i);
-			return day;
+			const dayDate = new Date(monday);
+			dayDate.setDate(monday.getDate() + i);
+			return dayDate;
 		});
 	},
 

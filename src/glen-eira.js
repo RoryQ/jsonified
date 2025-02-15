@@ -6,7 +6,7 @@ const GlenEiraParser = {
 			const dayBlock = glenEiraJson.dayBlocks.find(block => block.date === day.date);
 			if (!dayBlock) return;
 
-			const dayKey = day.displayWeekDay.toLowerCase();
+			const dayKey = day.date;
 			const timeSlots = Object.fromEntries(
 				dayBlock.hours.map(hour => [
 					hour.fromHour.value.slice(0, -3),

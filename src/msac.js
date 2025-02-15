@@ -47,6 +47,8 @@ function parsePoolTable(html, poolType) {
 		};
 	});
 
+	console.log(days)
+
 	// Parse table rows
 	const rowRegex = /<tr>(.*?)<\/tr>/gs;
 	let rowMatch;
@@ -110,7 +112,7 @@ function parseDateStr(dateStr) {
 }
 
 function parseDayName(dateStr) {
-	return parseDateStr(dateStr).toLocaleDateString('en-GB', { weekday: 'long' }).toLowerCase()
+	return parseDateStr(dateStr).toISOString().substring(0, 10)
 }
 
 function parseLaneCount(value) {

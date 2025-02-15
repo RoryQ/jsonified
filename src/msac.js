@@ -37,7 +37,7 @@ function parsePoolTable(html, poolType) {
 
 	// Initialize each day
 	dates.forEach(dateStr => {
-		const dayName = dateStr.split(' ')[0];
+		const dayName = parseDayName(dateStr)
 		if (!dayName) return;
 
 		days[dayName] = {
@@ -64,7 +64,7 @@ function parsePoolTable(html, poolType) {
 			const timeSlot = parseTime(cells[0]);
 			if (timeSlot) {
 				dates.forEach((dateStr, index) => {
-					const dayName = dateStr.split(' ')[0];
+					const dayName = parseDayName(dateStr)
 					if (!dayName) return;
 
 					const laneCount = parseLaneCount(cells[index + 1]);
@@ -74,7 +74,7 @@ function parsePoolTable(html, poolType) {
 		}
 	}
 
-	return { days };
+	return days;
 }
 
 function parseTime(timeStr) {
@@ -106,6 +106,10 @@ function parseDateStr(dateStr) {
 
 	today.setDate(num);
 	return today;
+}
+
+function parseDayName(dateStr) {
+	return parseDateStr(dateStr).toLocaleDateString('en-GB', { weekday: 'long' }).toLowerCase()
 }
 
 function parseLaneCount(value) {

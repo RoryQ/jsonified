@@ -68,10 +68,12 @@ const StonningtonParser = {
 			if (slotData) {
 				const weekDays = this.getWeekDates(new Date())
 				// For each day, add this time slot
-				Object.entries(slotData.slots).forEach(([day, lanes], i) => {
+				Object.entries(slotData.slots).forEach(([shortDay, lanes], i) => {
+					const shortToLong = {'mon':'monday', 'tue': 'tuesday', 'wed':'wednesday', 'thu': 'thursday', 'fri': 'friday', 'sat': 'saturday', 'sun': 'sunday'}
+					const day = shortToLong[shortDay]
 					if (!timeSlots[day]) {
 						timeSlots[day] = {
-							name: weekDays[i], // This is a simplification
+							name: weekDays[i].toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
 							timeSlots: {}
 						};
 					}
@@ -90,11 +92,7 @@ const StonningtonParser = {
 		return Array.from({ length: 7 }, (_, i) => {
 			const day = new Date(monday);
 			day.setDate(monday.getDate() + i);
-			return day.toLocaleDateString('en-GB', {
-				weekday: 'long',
-				day: 'numeric',
-				month: 'long'
-			});
+			return day;
 		});
 	},
 
@@ -130,8 +128,8 @@ const StonningtonParser = {
 	parseHTML(htmlContent) {
 		const result = {
 			timestamp: new Date().toISOString(),
-			haroldHolt: { days: {} },
-			prahran: { days: {} }
+			haroldHolt: {  },
+			prahran: {  }
 		};
 
 		// Find and parse harold holt outdoor pool table
@@ -139,7 +137,7 @@ const StonningtonParser = {
 		if (haroldHolt) {
 			const rows = this.extractRows(haroldHolt);
 			if (rows.length > 1) { // Skip header row
-				result.haroldHolt.days = this.parseTimeSlots(rows.slice(1));
+				result.haroldHolt = this.parseTimeSlots(rows.slice(1));
 			}
 		}
 
@@ -148,7 +146,7 @@ const StonningtonParser = {
 		if (prahran) {
 			const rows = this.extractRows(prahran);
 			if (rows.length > 1) { // Skip header row
-				result.prahran.days = this.parseTimeSlots(rows.slice(1));
+				result.prahran = this.parseTimeSlots(rows.slice(1));
 			}
 		}
 

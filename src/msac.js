@@ -41,7 +41,7 @@ function parsePoolTable(html, poolType) {
 		if (!dayName) return;
 
 		days[dayName] = {
-			name: dateStr,
+			name: parseDateStr(dateStr).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
 			timeSlots: {}
 		};
 	});
@@ -94,6 +94,18 @@ function parseTime(timeStr) {
 	}
 
 	return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+function parseDateStr(dateStr) {
+	let today = new Date();
+	let num = parseInt(dateStr.split(' ')[1])
+
+	if (num < today.getDay()) {
+		today.setMonth(today.getMonth() + 1)
+	}
+
+	today.setDate(num);
+	return today;
 }
 
 function parseLaneCount(value) {

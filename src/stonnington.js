@@ -1,4 +1,4 @@
-const LaneParser = {
+const StonningtonParser = {
 	// Convert cell background color and text to lane count
 	getLaneCount(backgroundColor, text) {
 		if (backgroundColor === 'rgb(255, 130, 130)' ||
@@ -16,20 +16,25 @@ const LaneParser = {
 
 	// Convert time format (e.g., "5:45am - 6am" -> "05:45")
 	normalizeTime(timeText) {
-		const timeMatch = timeText.match(/(\d{1,2}):?(\d{2})?(?:am|pm)?/i);
+		// Extract just the first time from any range
+		const firstTime = timeText.split('-')[0].trim();
+		
+		const timeMatch = firstTime.match(/(\d{1,2}):?(\d{2})?(?:am|pm)?/i);
 		if (!timeMatch) return null;
-
+		
 		let hours = parseInt(timeMatch[1]);
 		const minutes = timeMatch[2] ? timeMatch[2] : "00";
-
-		// Handle 24-hour format
-		if (timeText.toLowerCase().includes('pm') && hours < 12) {
+		const isPM = firstTime.toLowerCase().endsWith('pm');
+		
+		// Special handling for 12am/12pm
+		if (hours === 12) {
+			hours = isPM ? 12 : 0;
+		}
+		// Convert PM times (excluding 12pm which is already handled)
+		else if (isPM) {
 			hours += 12;
 		}
-		if (timeText.toLowerCase().includes('am') && hours === 12) {
-			hours = 0;
-		}
-
+		
 		return `${hours.toString().padStart(2, '0')}:${minutes}`;
 	},
 
@@ -151,4 +156,4 @@ const LaneParser = {
 	}
 };
 
-module.exports = LaneParser;
+module.exports = StonningtonParser;

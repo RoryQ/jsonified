@@ -9,8 +9,9 @@ import * as R from 'ramda';
 import { parseBeachReport, parseYarraWatch, slugName } from './epa-vic';
 import { parseVictorianPublicHolidays } from './public-holidays-vic';
 import { parseNSWPublicHolidays } from './public-holidays-nsw';
-import parsePoolData from './msac';
-import LaneParser from './stonnington';
+import MsacParser from './msac';
+import StonningtonParser from './stonnington';
+import GlenEiraParser from './glen-eira';
 
 class Router {
 	routes = [];
@@ -92,6 +93,7 @@ router.get('/api/msac', msacHandler);
 router.get('/api/msac/tomorrow', msacLanesTomorrowHandler);
 router.get('/api/msac/tomorrow/:filter', msacLanesTomorrowHandler);
 router.get('/api/stonnington', stonningtonHandler);
+router.get('/api/glen-eira', glenEiraHandler);
 router.get('/api/epa-vic/:name', epaVicNameHandler);
 router.get('/api/epa-vic', epaVicHandler);
 router.get('/api/public-holidays/victoria/:year', publicHolidaysVictoriaHandler);
@@ -127,7 +129,7 @@ async function getMsacLanes() {
 	const html = await response.text();
 
 	// Parse the data
-	return await parsePoolData(html);
+	return await MsacParser(html);
 }
 
 async function msacHandler({ request }) {
@@ -143,9 +145,17 @@ async function msacHandler({ request }) {
 async function stonningtonHandler({ request }) {
 		const response = await fetch('https://www.stonnington.vic.gov.au/active/Swim/Lane-availability');
 		const html = await response.text();
-		const data = LaneParser.parseHTML(html);
+		const data = StonningtonParser.parseHTML(html);
 
 		return JsonResponse(data);
+}
+
+async function glenEiraHandler({ request }) {
+	const response = await fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=0bb104dd7&daysPerPage=7')
+	const json = await response.json();
+	const data = GlenEiraParser.convertCarnegieToStonnington(json);
+
+	return JsonResponse(data);
 }
 
 async function getEpaReport() {

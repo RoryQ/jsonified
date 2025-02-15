@@ -1,6 +1,6 @@
-export default parsePoolData;
+export default MsacParser;
 
-async function parsePoolData(html) {
+async function MsacParser(html) {
     return {
         timestamp: new Date().toISOString(),
         indoor: parsePoolTable(html, "indoor competition pool"),

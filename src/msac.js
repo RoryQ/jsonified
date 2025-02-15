@@ -98,7 +98,7 @@ function parseTime(timeStr) {
 
 function parseLaneCount(value) {
 	if (!value || value.toLowerCase() === 'closed') {
-		return 'Closed';
+		return 0;
 	}
 
 	const match = value.match(/^(\d+)/);

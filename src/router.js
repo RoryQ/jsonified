@@ -5,11 +5,11 @@
 // itty-router: https://www.npmjs.com/package/itty-router
 // Hono: https://www.npmjs.com/package/hono
 
-import parsePoolData from './msac';
-import { parseBeachReport, parseYarraWatch, slugName } from './epa-vic';
 import * as R from 'ramda';
+import { parseBeachReport, parseYarraWatch, slugName } from './epa-vic';
 import { parseVictorianPublicHolidays } from './public-holidays-vic';
 import { parseNSWPublicHolidays } from './public-holidays-nsw';
+import parsePoolData from './msac';
 import LaneParser from './stonnington';
 
 class Router {

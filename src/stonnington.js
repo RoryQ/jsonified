@@ -4,14 +4,14 @@ const LaneParser = {
 		if (backgroundColor === 'rgb(255, 130, 130)' ||
 			backgroundColor === 'rgb(255, 133, 133)' ||
 			text.toLowerCase().includes('closed')) {
-			return "Closed";
+			return 0;
 		}
 
 		const match = text.match(/(\d+)\s*lanes?/);
 		if (match) {
 			return parseInt(match[1]);
 		}
-		return "Closed";
+		return 0;
 	},
 
 	// Convert time format (e.g., "5:45am - 6am" -> "05:45")
@@ -61,11 +61,12 @@ const LaneParser = {
 		rows.forEach(row => {
 			const slotData = this.extractTimeSlots(row);
 			if (slotData) {
+				const weekDays = this.getWeekDates(new Date())
 				// For each day, add this time slot
-				Object.entries(slotData.slots).forEach(([day, lanes]) => {
+				Object.entries(slotData.slots).forEach(([day, lanes], i) => {
 					if (!timeSlots[day]) {
 						timeSlots[day] = {
-							name: `${day} ${new Date().getDate()}`, // This is a simplification
+							name: weekDays[i], // This is a simplification
 							timeSlots: {}
 						};
 					}
@@ -75,6 +76,21 @@ const LaneParser = {
 		});
 
 		return timeSlots;
+	},
+
+	getWeekDates(date) {
+		const monday = new Date(date);
+		monday.setDate(date.getDate() - (date.getDay() || 7) + 1);
+
+		return Array.from({ length: 7 }, (_, i) => {
+			const day = new Date(monday);
+			day.setDate(monday.getDate() + i);
+			return day.toLocaleDateString('en-GB', {
+				weekday: 'long',
+				day: 'numeric',
+				month: 'long'
+			});
+		});
 	},
 
 	// Extract cells from a row
@@ -113,7 +129,7 @@ const LaneParser = {
 			prahran: { days: {} }
 		};
 
-		// Find and parse indoor pool table
+		// Find and parse harold holt outdoor pool table
 		const haroldHolt = this.findTableByHeader(htmlContent, 'Harold Holt 50m pool');
 		if (haroldHolt) {
 			const rows = this.extractRows(haroldHolt);
@@ -122,7 +138,7 @@ const LaneParser = {
 			}
 		}
 
-		// Find and parse outdoor pool table
+		// Find and parse prahran outdoor pool table
 		const prahran = this.findTableByHeader(htmlContent, 'Prahran Aquatic 50m Pool');
 		if (prahran) {
 			const rows = this.extractRows(prahran);

@@ -3,8 +3,8 @@ export default MsacParser;
 async function MsacParser(html) {
     return {
         timestamp: new Date().toISOString(),
-        indoor: parsePoolTable(html, "indoor competition pool"),
-        outdoor: parsePoolTable(html, "outdoor competition pool")
+        msacIndoor: parsePoolTable(html, "indoor competition pool"),
+        msacOutdoor: parsePoolTable(html, "outdoor competition pool")
     };
 }
 

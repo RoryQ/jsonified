@@ -89,6 +89,7 @@ function trimTrailingSlashes(str) {
 // Setting up our application:
 const router = new Router();
 
+router.get('/api/lap-lanes', lapLanesHandler);
 router.get('/api/msac', msacHandler);
 router.get('/api/msac/tomorrow', msacLanesTomorrowHandler);
 router.get('/api/msac/tomorrow/:filter', msacLanesTomorrowHandler);
@@ -104,7 +105,7 @@ router.get('/api/public-holidays/new-south-wales/:year', nswPublicHolidaysHandle
 router.all('*', () => new Response('Not Found.', { status: 404 }));
 
 async function msacLanesTomorrowHandler({ params }) {
-	const data = await getMsacLanes();
+	const data = await getMsacData();
 
 	// filter for tomorrow
 	let tomorrow = {
@@ -124,7 +125,7 @@ async function msacLanesTomorrowHandler({ params }) {
 	return JsonResponse(tomorrow);
 }
 
-async function getMsacLanes() {
+async function getMsacData() {
 	const response = await fetch('https://statesportcentres.com.au/aquatics/lap-lane-availability/');
 	const html = await response.text();
 
@@ -134,7 +135,7 @@ async function getMsacLanes() {
 
 async function msacHandler({ request }) {
 	try {
-		const data = await getMsacLanes();
+		const data = await getMsacData();
 
 		return JsonResponse(data);
 	} catch (error) {
@@ -142,24 +143,43 @@ async function msacHandler({ request }) {
 	}
 }
 
-async function stonningtonHandler({ request }) {
-		const response = await fetch('https://www.stonnington.vic.gov.au/active/Swim/Lane-availability');
-		const html = await response.text();
-		const data = StonningtonParser.parseHTML(html);
+async function getStonningtonData() {
+	const response = await fetch('https://www.stonnington.vic.gov.au/active/Swim/Lane-availability');
+	const html = await response.text();
+	return StonningtonParser.parseHTML(html);
+}
 
-		return JsonResponse(data);
+async function stonningtonHandler({ request }) {
+	const data = await getStonningtonData();
+	return JsonResponse(data);
+}
+
+async function getGlenEiraData() {
+	const carnegieJson = await (await fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=0bb104dd7&daysPerPage=7')).json();
+	const gesacJson = await (await fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=2c38d8a41&daysPerPage=7')).json();
+	return {
+		timestamp: new Date().toISOString(),
+		carnegie: GlenEiraParser.normaliseDataModel(carnegieJson),
+		gesac: GlenEiraParser.normaliseDataModel(gesacJson)
+	};
 }
 
 async function glenEiraHandler({ request }) {
-	const carnegieJson = await (await fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=0bb104dd7&daysPerPage=7')).json()
-	const gesacJson = await (await fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=2c38d8a41&daysPerPage=7')).json()
-	const result = {
-		timestamp: new Date().toISOString(),
-		carnegie: GlenEiraParser.normaliseDataModel(carnegieJson),
-		gesac: GlenEiraParser.normaliseDataModel(gesacJson),
-	};
+	const result = await getGlenEiraData();
 
 	return JsonResponse(result);
+}
+
+async function lapLanesHandler({ request }) {
+	const glenEira = await getGlenEiraData()
+	const msacData = await getMsacData()
+	const stonningtonData = await getStonningtonData();
+
+	return JsonResponse({
+		...glenEira,
+		...stonningtonData,
+		...msacData,
+	})
 }
 
 async function getEpaReport() {

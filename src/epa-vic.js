@@ -86,8 +86,8 @@ function parseWaterQuality(html) {
 	if (!html) return null;
 
 	// Extract rating class
-	const ratingMatch = html.match(/indicator\s+(\w+)/);
-	const rating = ratingMatch ? ratingMatch[1] : null;
+	const ratingMatch = html.match(/indicator\s+([\w-]+)/);
+	const rating = ratingMatch ? ratingMatch[1].replace(/-/g, ' ').trim() : null;
 
 	// Extract status message
 	const messageMatch = html.match(/<p>(.*?)<\/p>/);

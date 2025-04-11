@@ -101,7 +101,11 @@ function parseTime(timeStr) {
 
 function parseDateStr(dateStr) {
 	let today = new Date();
-	let num = parseInt(dateStr.split(' ')[1])
+	const dayDate = dateStr.split(' ');
+	if (dayDate.length < 2) {
+		return
+	}
+	let num = parseInt(dayDate[1])
 
 	if (num < today.getDay()) {
 		today.setMonth(today.getMonth() + 1)
@@ -112,7 +116,9 @@ function parseDateStr(dateStr) {
 }
 
 function parseDayName(dateStr) {
-	return parseDateStr(dateStr).toISOString().substring(0, 10)
+	const date = parseDateStr(dateStr);
+	if (!date) return "";
+	return date.toISOString().substring(0, 10)
 }
 
 function parseLaneCount(value) {

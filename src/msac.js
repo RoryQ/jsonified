@@ -100,14 +100,14 @@ function parseTime(timeStr) {
 }
 
 function parseDateStr(dateStr) {
-	let today = new Date();
 	const dayDate = dateStr.split(' ');
 	if (dayDate.length < 2) {
 		return
 	}
 	let num = parseInt(dayDate[1])
 
-	if (num < today.getDay()) {
+	let today = new Date();
+	if (num < today.getDate()) {
 		today.setMonth(today.getMonth() + 1)
 	}
 

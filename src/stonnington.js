@@ -87,7 +87,8 @@ const StonningtonParser = {
 
 	getWeekDates(date) {
 		const monday = new Date(date);
-		monday.setDate(date.getDate() - (date.getDay() || 7) + 1);
+		const daysUntilMonday = (8 - monday.getDay()) % 7;
+		monday.setDate(date.getDate() + daysUntilMonday);
 
 		return Array.from({ length: 7 }, (_, i) => {
 			const dayDate = new Date(monday);

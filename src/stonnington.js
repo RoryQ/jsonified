@@ -57,22 +57,24 @@ const StonningtonParser = {
 		});
 
 		return { time, slots };
+	}, formatDateString(date) {
+		return `${date.toLocaleDateString('en-US', { weekday: 'long' })} ${date.getDate()} ${date.toLocaleDateString('en-US', { month: 'long' })}`;
 	},
 
 	// Parse table rows into time slots
-	parseTimeSlots(rows) {
+	parseTimeSlots(rows, date = new Date()) {
 		const timeSlots = {};
 
 		rows.forEach(row => {
 			const slotData = this.extractTimeSlots(row);
 			if (slotData) {
-				const weekDays = this.getWeekDates(new Date())
+				const weekDays = this.getWeekDates(date)
 				// For each day, add this time slot
 				Object.entries(slotData.slots).forEach(([shortDay, lanes], i) => {
-					const day = weekDays[i].toISOString().substring(0, 10);
+					const day = this.toLocalDateISO(weekDays[i]);
 					if (!timeSlots[day]) {
 						timeSlots[day] = {
-							name: weekDays[i].toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
+							name: this.formatDateString(weekDays[i]),
 							timeSlots: {},
 							total: 8,
 						};
@@ -85,16 +87,22 @@ const StonningtonParser = {
 		return timeSlots;
 	},
 
-	getWeekDates(date) {
-		const monday = new Date(date);
-		const daysUntilMonday = (8 - monday.getDay()) % 7;
-		monday.setDate(date.getDate() + daysUntilMonday);
-
-		return Array.from({ length: 7 }, (_, i) => {
-			const dayDate = new Date(monday);
-			dayDate.setDate(monday.getDate() + i);
+	getWeekDates(inputDate) {
+		var dates = Array.from({ length: 7 }, (_, i) => {
+			const dayDate = new Date(inputDate);
+			dayDate.setDate(inputDate.getDate() + i);
 			return dayDate;
 		});
+
+		// sort by day of week starting on monday
+		dates.sort((a, b) => {
+			// Convert Sunday (0) to 7 to make it the last day of the week
+			const dayA = a.getDay() === 0 ? 7 : a.getDay();
+			const dayB = b.getDay() === 0 ? 7 : b.getDay();
+			return dayA - dayB;
+		});
+
+		return dates;
 	},
 
 	// Extract cells from a row
@@ -125,20 +133,37 @@ const StonningtonParser = {
 		return match ? `<table>${match[2]}</table>` : null;
 	},
 
+
+	findUpdatedDate(html) {
+		const updatedPattern = new RegExp(`Updated: (.*?20\\d\\d)`);
+		const match = html.match(updatedPattern);
+
+		return match ? new Date(match[1]) : null;
+	},
+
+	toLocalDateISO(date) {
+		return date.getFullYear() + '-' +
+			(date.getMonth() + 1).toString().padStart(2, '0') + '-' +
+			date.getDate().toString().padStart(2, '0');
+
+	},
+
 	// Parse HTML content
 	parseHTML(htmlContent) {
 		const result = {
-			timestamp: new Date().toISOString(),
+			timestamp: this.toLocalDateISO(new Date()),
 			haroldHolt: {  },
 			prahran: {  }
 		};
+
+		var updatedDate = this.findUpdatedDate(htmlContent);
 
 		// Find and parse harold holt outdoor pool table
 		const haroldHolt = this.findTableByHeader(htmlContent, 'Harold Holt 50m pool');
 		if (haroldHolt) {
 			const rows = this.extractRows(haroldHolt);
 			if (rows.length > 1) { // Skip header row
-				result.haroldHolt = this.parseTimeSlots(rows.slice(1));
+				result.haroldHolt = this.parseTimeSlots(rows.slice(1), updatedDate || new Date());
 			}
 		}
 
@@ -147,7 +172,7 @@ const StonningtonParser = {
 		if (prahran) {
 			const rows = this.extractRows(prahran);
 			if (rows.length > 1) { // Skip header row
-				result.prahran = this.parseTimeSlots(rows.slice(1));
+				result.prahran = this.parseTimeSlots(rows.slice(1), updatedDate || new Date());
 			}
 		}
 

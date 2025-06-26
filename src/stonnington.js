@@ -62,13 +62,13 @@ const StonningtonParser = {
 	},
 
 	// Parse table rows into time slots
-	parseTimeSlots(rows, date = new Date()) {
+	parseTimeSlots(rows, pageUpdatedDate) {
 		const timeSlots = {};
 
 		rows.forEach(row => {
 			const slotData = this.extractTimeSlots(row);
 			if (slotData) {
-				const weekDays = this.getWeekDates(date)
+				const weekDays = this.getWeekDates(pageUpdatedDate)
 				// For each day, add this time slot
 				Object.entries(slotData.slots).forEach(([shortDay, lanes], i) => {
 					const day = this.toLocalDateISO(weekDays[i]);
@@ -83,6 +83,14 @@ const StonningtonParser = {
 				});
 			}
 		});
+
+		// duplicate updated date
+		let weekAfter = new Date(pageUpdatedDate)
+		weekAfter.setDate(pageUpdatedDate.getDate() + 7)
+		const weekAfterTimeSlot = structuredClone(timeSlots[this.toLocalDateISO(pageUpdatedDate)]);
+		weekAfterTimeSlot.name = this.formatDateString(weekAfter)
+		timeSlots[this.toLocalDateISO(weekAfter)] = weekAfterTimeSlot
+
 
 		return timeSlots;
 	},

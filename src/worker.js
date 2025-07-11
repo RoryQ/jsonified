@@ -28,8 +28,8 @@ export default {
 		return new Response(
 			`Try making requests to:
       <ul>
+      <li><code><a href="/api/lap-lanes">/api/lap-lanes</a></code></li>
       <li><code><a href="/api/msac/tomorrow/morning">/api/msac/tomorrow/morning</a></code></li>
-      <li><code><a href="/api/stonnington/tomorrow/morning">/api/stonnington</a></code></li>
 			<li><code><a href="/api/epa-vic/elwood">/api/epa-vic/elwood</a></code></li>
 			<li><code><a href="/api/public-holidays/victoria/2025">/api/public-holidays/victoria/2025</a></code></li>
 			<li><code><a href="/api/public-holidays/new-south-wales/2025">/api/public-holidays/new-south-wales/2025</a></code></li>

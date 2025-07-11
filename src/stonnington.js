@@ -136,9 +136,11 @@ const StonningtonParser = {
 
 	// Find table by header text
 	findTableByHeader(html, headerText) {
-		const headerPattern = new RegExp(`<h2[^>]*>[^<]*${headerText}[^<]*<\/h2>([\\s\\S]*?)<table[^>]*>([\\s\\S]*?)<\/table>`);
-		const match = html.match(headerPattern);
-		return match ? `<table>${match[2]}</table>` : null;
+		// Look for h2 tag with the header text, followed by any content, then a table tag
+		const headerPattern = new RegExp(`<h2>(${headerText})<\\/h2>.*?<table[^>]*>(.*?)<\\/table>`, 's');
+		let match = html.match(headerPattern);
+
+		return `<table>${match[2]}</table>`;
 	},
 
 
@@ -173,6 +175,8 @@ const StonningtonParser = {
 			if (rows.length > 1) { // Skip header row
 				result.haroldHolt = this.parseTimeSlots(rows.slice(1), updatedDate || new Date());
 			}
+		} else {
+			console.log('Could not find harold holt table')
 		}
 
 		// Find and parse prahran outdoor pool table
@@ -182,6 +186,8 @@ const StonningtonParser = {
 			if (rows.length > 1) { // Skip header row
 				result.prahran = this.parseTimeSlots(rows.slice(1), updatedDate || new Date());
 			}
+		} else {
+			console.log('Could not find prahran table')
 		}
 
 		return result;

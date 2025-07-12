@@ -144,7 +144,30 @@ async function msacHandler({ request }) {
 }
 
 async function getStonningtonData() {
-	const response = await fetch('https://www.stonnington.vic.gov.au/active/Swim/Lane-availability');
+	const headers = {
+		'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0',
+		'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+		'Accept-Language': 'en-GB,en;q=0.5',
+		'Accept-Encoding': 'gzip, deflate, br, zstd',
+		'DNT': '1',
+		'Alt-Used': 'www.stonnington.vic.gov.au',
+		'Connection': 'keep-alive',
+		'Upgrade-Insecure-Requests': '1',
+		'Sec-Fetch-Dest': 'document',
+		'Sec-Fetch-Mode': 'navigate',
+		'Sec-Fetch-Site': 'none',
+		'Sec-Fetch-User': '?1',
+		'Priority': 'u=0, i',
+		'Pragma': 'no-cache',
+		'Cache-Control': 'no-cache'
+	};
+	const response = await fetch(
+		'https://www.stonnington.vic.gov.au/active/Swim/Lane-availability',
+		{headers: headers}
+		);
+	if (response.status !== 200) {
+		console.log(response);
+	}
 	const html = await response.text();
 	return StonningtonParser.parseHTML(html);
 }

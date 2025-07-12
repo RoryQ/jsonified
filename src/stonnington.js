@@ -87,9 +87,12 @@ const StonningtonParser = {
 		// duplicate updated date
 		let weekAfter = new Date(pageUpdatedDate)
 		weekAfter.setDate(pageUpdatedDate.getDate() + 7)
-		const weekAfterTimeSlot = structuredClone(timeSlots[this.toLocalDateISO(pageUpdatedDate)]);
-		weekAfterTimeSlot.name = this.formatDateString(weekAfter)
-		timeSlots[this.toLocalDateISO(weekAfter)] = weekAfterTimeSlot
+		const updatedDateKey = this.toLocalDateISO(pageUpdatedDate);
+		if (timeSlots[updatedDateKey]) {
+			const weekAfterTimeSlot = structuredClone(timeSlots[updatedDateKey]);
+			weekAfterTimeSlot.name = this.formatDateString(weekAfter)
+			timeSlots[this.toLocalDateISO(weekAfter)] = weekAfterTimeSlot
+		}
 
 
 		return timeSlots;
@@ -140,7 +143,7 @@ const StonningtonParser = {
 		const headerPattern = new RegExp(`<h2>(${headerText})<\\/h2>.*?<table[^>]*>(.*?)<\\/table>`, 's');
 		let match = html.match(headerPattern);
 
-		return `<table>${match[2]}</table>`;
+		return match ? `<table>${match[2]}</table>` : null;
 	},
 
 
@@ -166,14 +169,19 @@ const StonningtonParser = {
 			prahran: {  }
 		};
 
-		var updatedDate = this.findUpdatedDate(htmlContent);
+		const updatedDate = this.findUpdatedDate(htmlContent);
+
+		if (!updatedDate) {
+			console.log('Could not find updated date')
+			return result;
+		}
 
 		// Find and parse harold holt outdoor pool table
 		const haroldHolt = this.findTableByHeader(htmlContent, 'Harold Holt 50m pool');
 		if (haroldHolt) {
 			const rows = this.extractRows(haroldHolt);
 			if (rows.length > 1) { // Skip header row
-				result.haroldHolt = this.parseTimeSlots(rows.slice(1), updatedDate || new Date());
+				result.haroldHolt = this.parseTimeSlots(rows.slice(1), updatedDate );
 			}
 		} else {
 			console.log('Could not find harold holt table')
@@ -184,7 +192,7 @@ const StonningtonParser = {
 		if (prahran) {
 			const rows = this.extractRows(prahran);
 			if (rows.length > 1) { // Skip header row
-				result.prahran = this.parseTimeSlots(rows.slice(1), updatedDate || new Date());
+				result.prahran = this.parseTimeSlots(rows.slice(1), updatedDate);
 			}
 		} else {
 			console.log('Could not find prahran table')

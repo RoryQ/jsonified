@@ -12,6 +12,9 @@ import { parseNSWPublicHolidays } from './public-holidays-nsw';
 import MsacParser from './msac';
 import StonningtonParser from './stonnington';
 import GlenEiraParser from './glen-eira';
+import businessDays from './business-days';
+
+const { calculate: calculateBusinessDays } = businessDays;
 
 class Router {
 	routes = [];
@@ -100,6 +103,7 @@ router.get('/api/epa-vic', epaVicHandler);
 router.get('/api/public-holidays/victoria/:year', publicHolidaysVictoriaHandler);
 router.get('/api/public-holidays/new-south-wales', nswPublicHolidaysHandler);
 router.get('/api/public-holidays/new-south-wales/:year', nswPublicHolidaysHandler);
+router.get('/api/business-days', businessDaysHandler);
 
 // 404 for everything else
 router.all('*', () => new Response('Not Found.', { status: 404 }));
@@ -243,7 +247,8 @@ async function epaVicHandler({ request }) {
 async function publicHolidaysVictoriaHandler({ params }) {
 	const response = await fetch(`https://business.vic.gov.au/business-information/public-holidays/victorian-public-holidays-${params.year}`);
 	const html = await response.text();
-	return JsonResponse(parseVictorianPublicHolidays(html));
+	const data = parseVictorianPublicHolidays(html);
+	return JsonResponse(data);
 }
 
 async function nswPublicHolidaysHandler({ params }) {
@@ -251,9 +256,50 @@ async function nswPublicHolidaysHandler({ params }) {
 	const html = await response.text();
 	const holidays = parseNSWPublicHolidays(html);
 	if (!!params.year) {
-		return JsonResponse(R.pickBy((_, k) => k.startsWith(params.year), holidays));
+		const filteredHolidays = R.pickBy((_, k) => k.startsWith(params.year), holidays);
+		return JsonResponse(filteredHolidays);
 	}
 	return JsonResponse(holidays);
+}
+
+async function businessDaysHandler({ request }) {
+	function currentDateMelb() {
+		return new Date().toLocaleString('sv', // sweden are good lads with their sensible dates
+			{ timeZone: 'Australia/Melbourne' }).split(' ')[0];
+	}
+
+	try {
+		const url = new URL(request.url);
+		const date = url.searchParams.get('date') || currentDateMelb();
+		const stateTerritory = url.searchParams.get('stateTerritory') || 'victoria';
+		const holidays = await getHolidaysForState(date, stateTerritory);
+		const result = calculateBusinessDays({ date, holidays });
+		return JsonResponse(result);
+	} catch (error) {
+		console.log(error);
+		return JsonResponse({ error: error.message }, 400);
+	}
+}
+
+async function getHolidaysForState(date, stateTerritory) {
+	const year = date.split('-')[0];
+	switch (stateTerritory.toLowerCase()) {
+		case 'vic':
+		case 'victoria':
+			return parseVictorianPublicHolidays(
+				await fetch(`https://business.vic.gov.au/business-information/public-holidays/victorian-public-holidays-${year}`)
+					.then(res => res.text())
+			);
+		case 'nsw':
+		case 'new-south-wales':
+			const holidays = parseNSWPublicHolidays(
+				await fetch(`https://www.nsw.gov.au/about-nsw/public-holidays`)
+					.then(res => res.text())
+			);
+			return R.pickBy((_, k) => k.startsWith(year), holidays);
+		default:
+			return {}
+	}
 }
 
 function JsonResponse(data, status = 200) {

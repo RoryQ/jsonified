@@ -169,11 +169,12 @@ const StonningtonParser = {
 			prahran: {  }
 		};
 
-		const updatedDate = this.findUpdatedDate(htmlContent);
+		let updatedDate = this.findUpdatedDate(htmlContent);
 
 		if (!updatedDate) {
 			console.log('Could not find updated date')
-			return result;
+			updatedDate = new Date()
+			// return result;
 		}
 
 		// Find and parse harold holt outdoor pool table

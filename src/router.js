@@ -182,8 +182,10 @@ async function stonningtonHandler({ request }) {
 }
 
 async function getGlenEiraData() {
-	const carnegieJson = await (await fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=0bb104dd7&daysPerPage=7')).json();
-	const gesacJson = await (await fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=2c38d8a41&daysPerPage=7')).json();
+	const [carnegieJson, gesacJson] = await Promise.all([
+		fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=0bb104dd7&daysPerPage=7').then(r => r.json()),
+		fetch('https://geleisure.perfectgym.com.au/ClientPortal2/api/Calendars/ClubZoneOccupancyCalendar/GetCalendar?calendarId=2c38d8a41&daysPerPage=7').then(r => r.json())
+	]);
 	return {
 		timestamp: new Date().toISOString(),
 		carnegie: GlenEiraParser.normaliseDataModel(carnegieJson),
@@ -198,9 +200,11 @@ async function glenEiraHandler({ request }) {
 }
 
 async function lapLanesHandler({ request }) {
-	const glenEira = await getGlenEiraData()
-	const msacData = await getMsacData()
-	const stonningtonData = await getStonningtonData();
+	const [glenEira, msacData, stonningtonData] = await Promise.all([
+		getGlenEiraData(),
+		getMsacData(),
+		getStonningtonData()
+	]);
 
 	return JsonResponse({
 		...glenEira,

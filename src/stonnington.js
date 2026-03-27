@@ -89,7 +89,7 @@ const StonningtonParser = {
 		weekAfter.setDate(pageUpdatedDate.getDate() + 7)
 		const updatedDateKey = this.toLocalDateISO(pageUpdatedDate);
 		if (timeSlots[updatedDateKey]) {
-			const weekAfterTimeSlot = structuredClone(timeSlots[updatedDateKey]);
+			const weekAfterTimeSlot = JSON.parse(JSON.stringify(timeSlots[updatedDateKey]));
 			weekAfterTimeSlot.name = this.formatDateString(weekAfter)
 			timeSlots[this.toLocalDateISO(weekAfter)] = weekAfterTimeSlot
 		}

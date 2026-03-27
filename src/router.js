@@ -19,16 +19,12 @@ const { calculate: calculateBusinessDays } = businessDays;
 class Router {
 	routes = [];
 
-	handle(request) {
+	handle(request, env, ctx) {
 		for (const route of this.routes) {
 			const match = route[0](request);
 			if (match) {
-				return route[1]({ ...match, request });
+				return route[1]({ ...match, request, env, ctx });
 			}
-		}
-		const match = this.routes.find(([matcher]) => matcher(request));
-		if (match) {
-			return match[1](request);
 		}
 	}
 
@@ -199,18 +195,35 @@ async function glenEiraHandler({ request }) {
 	return JsonResponse(result);
 }
 
-async function lapLanesHandler({ request }) {
+async function lapLanesHandler({ request, ctx }) {
+	const cache = caches.default;
+	const cacheKey = new Request(request.url, request);
+
+	let response = await cache.match(cacheKey);
+	if (response) {
+		return response;
+	}
+
 	const [glenEira, msacData, stonningtonData] = await Promise.all([
 		getGlenEiraData(),
 		getMsacData(),
 		getStonningtonData()
 	]);
 
-	return JsonResponse({
+	const data = {
 		...glenEira,
 		...stonningtonData,
 		...msacData,
-	})
+	};
+
+	// 1 hour cache = 3600 seconds
+	response = JsonResponse(data, 200, 3600);
+
+	if (ctx && ctx.waitUntil) {
+		ctx.waitUntil(cache.put(cacheKey, response.clone()));
+	}
+
+	return response;
 }
 
 async function getEpaReport() {
@@ -306,13 +319,19 @@ async function getHolidaysForState(date, stateTerritory) {
 	}
 }
 
-function JsonResponse(data, status = 200) {
+function JsonResponse(data, status = 200, maxAge = 0) {
+	const headers = {
+		'Content-Type': 'application/json',
+		'Access-Control-Allow-Origin': '*'
+	};
+
+	if (maxAge > 0) {
+		headers['Cache-Control'] = `public, s-maxage=${maxAge}, max-age=${Math.min(maxAge, 300)}`;
+	}
+
 	return new Response(JSON.stringify(data, null, 2), {
 		status: status,
-		headers: {
-			'Content-Type': 'application/json',
-			'Access-Control-Allow-Origin': '*'
-		}
+		headers: headers
 	});
 }
 

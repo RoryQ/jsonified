@@ -7,8 +7,8 @@
 
 import * as R from 'ramda';
 import { parseBeachReport, parseYarraWatch, slugName } from './epa-vic';
-import { parseVictorianPublicHolidays } from './public-holidays-vic';
 import { parseNSWPublicHolidays } from './public-holidays-nsw';
+import { parseFairWorkPublicHolidays } from './fairwork-parser';
 import MsacParser from './msac';
 import StonningtonParser from './stonnington';
 import GlenEiraParser from './glen-eira';
@@ -99,10 +99,25 @@ router.get('/api/epa-vic', epaVicHandler);
 router.get('/api/public-holidays/victoria/:year', publicHolidaysVictoriaHandler);
 router.get('/api/public-holidays/new-south-wales', nswPublicHolidaysHandler);
 router.get('/api/public-holidays/new-south-wales/:year', nswPublicHolidaysHandler);
+router.get('/api/public-holidays/:state/:year', publicHolidaysHandler);
 router.get('/api/business-days', businessDaysHandler);
 
 // 404 for everything else
 router.all('*', () => new Response('Not Found.', { status: 404 }));
+
+async function publicHolidaysHandler({ params }) {
+	try {
+		const response = await fetch(`https://www.fairwork.gov.au/employment-conditions/public-holidays/${params.year}-public-holidays`);
+		if (!response.ok) {
+			return JsonResponse({ error: `Could not fetch holidays for ${params.year}` }, response.status);
+		}
+		const html = await response.text();
+		const data = parseFairWorkPublicHolidays(html, params.state, params.year);
+		return JsonResponse(data);
+	} catch (error) {
+		return JsonResponse({ error: error.message }, 400);
+	}
+}
 
 async function msacLanesTomorrowHandler({ params }) {
 	const data = await getMsacData();
@@ -262,13 +277,26 @@ async function epaVicHandler({ request }) {
 }
 
 async function publicHolidaysVictoriaHandler({ params }) {
-	const response = await fetch(`https://business.vic.gov.au/business-information/public-holidays/victorian-public-holidays-${params.year}`);
+	const response = await fetch(`https://www.fairwork.gov.au/employment-conditions/public-holidays/${params.year}-public-holidays`);
 	const html = await response.text();
-	const data = parseVictorianPublicHolidays(html);
+	const data = parseFairWorkPublicHolidays(html, 'victoria', params.year);
 	return JsonResponse(data);
 }
 
 async function nswPublicHolidaysHandler({ params }) {
+	const year = params.year || new Date().getFullYear().toString();
+	try {
+		const response = await fetch(`https://www.fairwork.gov.au/employment-conditions/public-holidays/${year}-public-holidays`);
+		if (response.ok) {
+			const html = await response.text();
+			const holidays = parseFairWorkPublicHolidays(html, 'nsw', year);
+			return JsonResponse(holidays);
+		}
+	} catch (e) {
+		console.error('Fair Work fetch failed for NSW handler:', e.message);
+	}
+
+	// Fallback to existing NSW government site parser
 	const response = await fetch(`https://www.nsw.gov.au/about-nsw/public-holidays`);
 	const html = await response.text();
 	const holidays = parseNSWPublicHolidays(html);
@@ -300,22 +328,27 @@ async function businessDaysHandler({ request }) {
 
 async function getHolidaysForState(date, stateTerritory) {
 	const year = date.split('-')[0];
-	switch (stateTerritory.toLowerCase()) {
-		case 'vic':
-		case 'victoria':
-			return parseVictorianPublicHolidays(
-				await fetch(`https://business.vic.gov.au/business-information/public-holidays/victorian-public-holidays-${year}`)
-					.then(res => res.text())
-			);
-		case 'nsw':
-		case 'new-south-wales':
-			const holidays = parseNSWPublicHolidays(
-				await fetch(`https://www.nsw.gov.au/about-nsw/public-holidays`)
-					.then(res => res.text())
-			);
-			return R.pickBy((_, k) => k.startsWith(year), holidays);
-		default:
-			return {}
+	try {
+		const response = await fetch(`https://www.fairwork.gov.au/employment-conditions/public-holidays/${year}-public-holidays`);
+		if (!response.ok) {
+			throw new Error(`Failed to fetch holidays from Fair Work: ${response.status}`);
+		}
+		const html = await response.text();
+		return parseFairWorkPublicHolidays(html, stateTerritory, year);
+	} catch (error) {
+		console.error(`Error fetching holidays for ${stateTerritory} ${year}:`, error.message);
+		// Fallback for NSW if Fair Work fails, as we know the NSW site was working
+		if (stateTerritory.toLowerCase().includes('nsw') || stateTerritory.toLowerCase().includes('new-south-wales')) {
+			try {
+				const nswResponse = await fetch('https://www.nsw.gov.au/about-nsw/public-holidays');
+				const nswHtml = await nswResponse.text();
+				const holidays = parseNSWPublicHolidays(nswHtml);
+				return R.pickBy((_, k) => k.startsWith(year), holidays);
+			} catch (nswError) {
+				console.error('NSW fallback also failed:', nswError.message);
+			}
+		}
+		return {};
 	}
 }
 

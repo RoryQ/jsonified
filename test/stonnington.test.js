@@ -19,30 +19,30 @@ describe('Stonnington Parser', () => {
       // Check Harold Holt pool data
       expect(result.haroldHolt).toBeDefined();
 
-      // Check specific date (Monday, May 15, 2023)
-      const mondayKey = '2023-05-15';
+      // Check specific date (Monday, May 25, 2026)
+      const mondayKey = '2026-05-25';
       expect(result.haroldHolt[mondayKey]).toBeDefined();
-      expect(result.haroldHolt[mondayKey].name).toBe('Monday 15 May');
+      expect(result.haroldHolt[mondayKey].name).toBe('Monday 25 May');
       expect(result.haroldHolt[mondayKey].total).toBe(8);
 
       // Check time slots for Monday
-      expect(result.haroldHolt[mondayKey].timeSlots['05:45']).toBe(4);
-      expect(result.haroldHolt[mondayKey].timeSlots['06:00']).toBe(8);
+      expect(result.haroldHolt[mondayKey].timeSlots['05:45']).toBe(6);
+      expect(result.haroldHolt[mondayKey].timeSlots['06:00']).toBe(6);
 
       // Check Prahran pool data
       expect(result.prahran).toBeDefined();
 
       // Check specific date for Prahran
       expect(result.prahran[mondayKey]).toBeDefined();
-      expect(result.prahran[mondayKey].name).toBe('Monday 15 May');
+      expect(result.prahran[mondayKey].name).toBe('Monday 25 May');
       expect(result.prahran[mondayKey].total).toBe(8);
 
       // Check time slots for Monday at Prahran
-      expect(result.prahran[mondayKey].timeSlots['05:45']).toBe(3);
-      expect(result.prahran[mondayKey].timeSlots['06:00']).toBe(6);
+      expect(result.prahran[mondayKey].timeSlots['05:45']).toBe(6);
+      expect(result.prahran[mondayKey].timeSlots['06:00']).toBe(5);
 
       // Check Saturday (should be closed at 5:45am)
-      const saturdayKey = '2023-05-20';
+      const saturdayKey = '2026-05-23';
       expect(result.haroldHolt[saturdayKey].timeSlots['05:45']).toBe(0);
       expect(result.prahran[saturdayKey].timeSlots['05:45']).toBe(0);
   });

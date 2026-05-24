@@ -159,29 +159,27 @@ async function msacHandler({ request }) {
 }
 
 async function getStonningtonData() {
-	const headers = {
-		'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0',
-		'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-		'Accept-Language': 'en-GB,en;q=0.5',
-		'Accept-Encoding': 'gzip, deflate, br, zstd',
-		'DNT': '1',
-		'Alt-Used': 'www.stonnington.vic.gov.au',
-		'Connection': 'keep-alive',
-		'Upgrade-Insecure-Requests': '1',
-		'Sec-Fetch-Dest': 'document',
-		'Sec-Fetch-Mode': 'navigate',
-		'Sec-Fetch-Site': 'none',
-		'Sec-Fetch-User': '?1',
-		'Priority': 'u=0, i',
-		'Pragma': 'no-cache',
-		'Cache-Control': 'no-cache'
-	};
-	const response = await fetch(
+	// Try a few variations to bypass 403 blocks
+	const urls = [
 		'https://www.stonnington.vic.gov.au/active/Swim/Lane-availability',
-		{headers: headers}
-		);
+		'https://www.stonnington.vic.gov.au/Active-Stonnington/Swim/Lane-availability'
+	];
+	const headers = [
+		{ 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' },
+		{ 'User-Agent': 'curl/7.64.1' },
+		{} // No headers (default)
+	];
+
+	let response;
+	outer: for (const url of urls) {
+		for (const h of headers) {
+			response = await fetch(url, { headers: h });
+			if (response.status === 200) break outer;
+		}
+	}
+
 	if (response.status !== 200) {
-		console.log(response);
+		console.log(`Stonnington fetch failed with status ${response.status}`);
 	}
 	const html = await response.text();
 	return StonningtonParser.parseHTML(html);

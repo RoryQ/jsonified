@@ -139,8 +139,8 @@ const StonningtonParser = {
 
 	// Find table by header text
 	findTableByHeader(html, headerText) {
-		// Look for h2 tag with the header text, followed by any content, then a table tag
-		const headerPattern = new RegExp(`<h2>(${headerText})<\\/h2>.*?<table[^>]*>(.*?)<\\/table>`, 's');
+		// Look for any header tag (h1-h4) with the header text
+		const headerPattern = new RegExp(`<h[1-4][^>]*>\\s*(${headerText})\\s*<\\/h[1-4]>.*?<table[^>]*>(.*?)<\\/table>`, 'si');
 		let match = html.match(headerPattern);
 
 		return match ? `<table>${match[2]}</table>` : null;
@@ -148,10 +148,13 @@ const StonningtonParser = {
 
 
 	findUpdatedDate(html) {
-		const updatedPattern = new RegExp(`Updated: (.*?20\\d\\d)`);
+		const updatedPattern = /Updated:\s*([^<]+20\d\d)/i;
 		const match = html.match(updatedPattern);
-
-		return match ? new Date(match[1]) : null;
+		if (match) {
+			const dateStr = match[1].replace(/&nbsp;/g, ' ').trim();
+			return new Date(dateStr);
+		}
+		return null;
 	},
 
 	toLocalDateISO(date) {
@@ -189,7 +192,7 @@ const StonningtonParser = {
 		}
 
 		// Find and parse prahran outdoor pool table
-		const prahran = this.findTableByHeader(htmlContent, 'Prahran Aquatic 50m Pool');
+		const prahran = this.findTableByHeader(htmlContent, 'Prahran Aquatic 50m pool');
 		if (prahran) {
 			const rows = this.extractRows(prahran);
 			if (rows.length > 1) { // Skip header row

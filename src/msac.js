@@ -1,83 +1,71 @@
-export default MsacParser;
-
 async function MsacParser(html) {
-    return {
-        timestamp: new Date().toISOString(),
-        msacIndoor: parsePoolTable(html, "indoor competition pool"),
-        msacOutdoor: parsePoolTable(html, "outdoor competition pool")
-    };
-}
+	const msacIndoor = {};
+	const msacOutdoor = {};
 
+	const daySections = html.split(/<details class="msac-day-accordion"/i).slice(1);
 
-function parsePoolTable(html, poolType) {
-	const accordionRegex = new RegExp(`<h3[^>]*>${poolType}</h3>.*?<table.*?>(.*?)</table>`, 'is');
-	const tableMatch = accordionRegex.exec(html);
+	for (const daySection of daySections) {
+		const summaryMatch = daySection.match(/<summary>([^<]+)<\/summary>/i);
+		if (!summaryMatch) continue;
+		const dateStr = summaryMatch[1].trim();
 
-	if (!tableMatch) {
-		return { error: `Table not found for ${poolType}` };
-	}
+		const dayName = parseDayName(dateStr);
+		if (!dayName) continue;
 
-	const tableHtml = tableMatch[1];
+		const dateObj = parseDateStr(dateStr);
+		const formattedName = dateObj.toLocaleDateString('en-GB', {
+			timeZone: 'Australia/Melbourne',
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long'
+		});
 
-	// Parse headers (dates)
-	const headerRegex = /<th.*?>(.*?)<\/th>/gi;
-	const dates = [];
-	let headerMatch;
+		const poolSections = daySection.split(/<div class="msac-public-pool"/i).slice(1);
 
-	while ((headerMatch = headerRegex.exec(tableHtml)) !== null) {
-		const date = headerMatch[1].trim().toLowerCase();
-		if (date !== '') {
-			dates.push(date);
-		}
-	}
-	dates.shift(); // Remove first column header (time)
-	dates.length = Math.min(dates.length, 7); // Limit to 7 days
+		for (const poolSection of poolSections) {
+			const poolNameMatch = poolSection.match(/data-pool="([^"]+)"/i);
+			if (!poolNameMatch) continue;
+			const poolName = poolNameMatch[1].trim();
 
-	const days = {};
+			if (poolName !== 'Indoor 50m' && poolName !== 'Outdoor 50m') {
+				continue;
+			}
 
-	// Initialize each day
-	dates.forEach(dateStr => {
-		const dayName = parseDayName(dateStr)
-		if (!dayName) return;
+			const timeSlots = {};
+			const cards = poolSection.split(/<div class="msac-slot-card/i).slice(1);
 
-		days[dayName] = {
-			name: parseDateStr(dateStr).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
-			timeSlots: {},
-			total: 10,
-		};
-	});
+			for (const card of cards) {
+				const timeMatch = card.match(/<div class="msac-slot-time">([^<]+)<\/div>/i);
+				const statusMatch = card.match(/<div class="msac-slot-status[^>]*>([\s\S]*?)<\/div>/i);
 
-	console.log(days)
+				if (timeMatch && statusMatch) {
+					const timeRangeStr = timeMatch[1].trim();
+					const statusText = statusMatch[1].replace(/<[^>]*>/g, '').trim();
 
-	// Parse table rows
-	const rowRegex = /<tr>(.*?)<\/tr>/gs;
-	let rowMatch;
+					const timeSlot = parseTime(timeRangeStr);
+					if (timeSlot) {
+						const laneCount = parseLaneCount(statusText);
+						timeSlots[timeSlot] = laneCount;
+					}
+				}
+			}
 
-	while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
-		const rowHtml = rowMatch[1];
-		const cellRegex = /<td.*?>(.*?)<\/td>/gi;
-		const cells = [];
-		let cellMatch;
-
-		while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
-			cells.push(cellMatch[1].replace(/<[^>]*>/g, '').trim());
-		}
-
-		if (cells.length > 0) {
-			const timeSlot = parseTime(cells[0]);
-			if (timeSlot) {
-				dates.forEach((dateStr, index) => {
-					const dayName = parseDayName(dateStr)
-					if (!dayName) return;
-
-					const laneCount = parseLaneCount(cells[index + 1]);
-					days[dayName].timeSlots[timeSlot] = laneCount;
-				});
+			if (Object.keys(timeSlots).length > 0) {
+				const target = poolName === 'Indoor 50m' ? msacIndoor : msacOutdoor;
+				target[dayName] = {
+					name: formattedName,
+					timeSlots: timeSlots,
+					total: 10
+				};
 			}
 		}
 	}
 
-	return days;
+	return {
+		timestamp: new Date().toISOString(),
+		msacIndoor,
+		msacOutdoor
+	};
 }
 
 function parseTime(timeStr) {
@@ -102,13 +90,16 @@ function parseTime(timeStr) {
 function parseDateStr(dateStr) {
 	const dayDate = dateStr.split(' ');
 	if (dayDate.length < 2) {
-		return
+		return;
 	}
-	let num = parseInt(dayDate[1])
+	let num = parseInt(dayDate[1]);
 
-	let today = new Date();
+	// Get current time in Melbourne to establish baseline date/month/year
+	let today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Australia/Melbourne' }));
+	today.setHours(12, 0, 0, 0); // set to noon to avoid day shifts
+
 	if (num < today.getDate()) {
-		today.setMonth(today.getMonth() + 1)
+		today.setMonth(today.getMonth() + 1);
 	}
 
 	today.setDate(num);
@@ -118,18 +109,32 @@ function parseDateStr(dateStr) {
 function parseDayName(dateStr) {
 	const date = parseDateStr(dateStr);
 	if (!date) return "";
-	return date.toISOString().substring(0, 10)
+	const year = date.toLocaleString('en-US', { timeZone: 'Australia/Melbourne', year: 'numeric' });
+	const month = date.toLocaleString('en-US', { timeZone: 'Australia/Melbourne', month: '2-digit' });
+	const day = date.toLocaleString('en-US', { timeZone: 'Australia/Melbourne', day: '2-digit' });
+	return `${year}-${month}-${day}`;
 }
 
 function parseLaneCount(value) {
-	if (!value || value.toLowerCase() === 'closed') {
+	if (!value) {
+		return 0;
+	}
+	const lower = value.toLowerCase();
+	if (lower.includes('closed') || lower === 'closed') {
 		return 0;
 	}
 
-	const match = value.match(/^(\d+)/);
+	const ratioMatch = value.match(/(\d+)\/\d+/);
+	if (ratioMatch) {
+		return parseInt(ratioMatch[1]);
+	}
+
+	const match = value.match(/(\d+)/);
 	if (match) {
 		return parseInt(match[1]);
 	}
 
-	return value;
+	return 0;
 }
+
+module.exports = MsacParser;
